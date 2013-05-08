@@ -55,20 +55,17 @@ char* de_transpose(char *key, char *cipher_text)
 
 	init_transpose_key(&tk, key, strlen(key));
 	subst_text = transpose_cipher(cipher_text, strlen(cipher_text), tk);	
-	return cipher_text;
+	return subst_text;
 }
 
 char* crypt(char *key, char *keysquare, char *plain_text)
 {
-	printf("subst %s\n", substitute(keysquare, plain_text));
 
 	return transpose(key, substitute(keysquare, plain_text));
-	//return transpose(key, plain_text);
 }
 
 char* de_crypt(char *key, char *keysquare, char *cipher_text)
 {
-//	return de_substitute(keysquare, de_transpose(key, cipher_text));
-	return de_transpose(key, cipher_text);
+	return de_substitute(keysquare, de_transpose(key, cipher_text));
 }
 
