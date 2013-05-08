@@ -2,17 +2,20 @@ LD_FLAGS = -lpthread
 
 build: main
 
-main: keysquare.o adfgvx_crypt.o main.o
-	gcc keysquare.o main.o -o main
+main: substitute.o transpose.o main.o
+	gcc -g substitute.o transpose.o main.o -o main
 
-keysquare.o: keysquare.c keysquare.h
-	gcc -c keysquare.c -o keysquare.o
+substitute.o: substitute.c substitute.h
+	gcc -g -c substitute.c -o substitute.o
 
-adfgvx_crypt.o: adfgvx_crypt.c adfgvx_crypt.h
-	gcc -c adfgvx_crypt.c -o adfgvx_crypt.o
+transpose.o: transpose.c transpose.h
+	gcc -g -c transpose.c -o transpose.o
+
+crypt.o: crypt.c crypt.h
+	gcc -g -c crypt.c -o crypt.o
 
 main.o: main.c
-	gcc -c main.c -o main.o
+	gcc -g -c main.c -o main.o
 
 clean:
 	rm *.o main
