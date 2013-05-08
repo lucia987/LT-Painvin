@@ -12,8 +12,8 @@ struct substitute_key {
 	unsigned char col[N_CODE_SQRD];
 };
 
-void init_keysquare(char *keysquare, struct substitute_key *ks);
-void substitute_plain(struct substitute_key *ks, char plain, char *cipher);
-char substitute_cipher(struct substitute_key *ks, char cipher[2]);
+void init_substitute_key(char *keysquare, struct substitute_key *ks);
+char *substitute_plain(struct substitute_key *ks, char *plain, int size);
+char *substitute_cipher(struct substitute_key *ks, char *cipher, int size);
 
 #endif

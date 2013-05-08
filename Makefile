@@ -2,8 +2,8 @@ LD_FLAGS = -lpthread
 
 build: main
 
-main: substitute.o transpose.o main.o
-	gcc -g substitute.o transpose.o main.o -o main
+main: substitute.o transpose.o crypt.o main.o
+	gcc -g substitute.o transpose.o crypt.o main.o -o main
 
 substitute.o: substitute.c substitute.h
 	gcc -g -c substitute.c -o substitute.o

@@ -1,26 +1,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "substitute.h"
 #include "transpose.h"
+#include "crypt.h"
 
 int main(int argc, char **argv)
 {
-	char key[] = "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8";
-	char lala[] = "german";
+	char keysquare[] = "ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8";
+	char key[] = "german";
 	char text[] = "undeteducisambataviitoare";
-	char cipher[30];
-	char cipher2[30];
+
 
 	struct transpose_key tk;
-	init_transpose_key(&tk, lala, 6);
-	fprint_transpose_key(stdout, tk);
-	quicksort(&tk, 0, tk.size-1);
-	fprint_transpose_key(stdout, tk);
-	
-	transpose_plain(text, cipher, strlen(text), tk);
-	printf("text cifrat %s\n", cipher);
-	memset(cipher2, '0', strlen(text));
-	transpose_cipher(cipher, cipher2, strlen(text), );
-	printf("text DEScifrat %s\n", cipher2);
+	char *cipher_text;
+	char *subst_text;
+
+	init_transpose_key(&tk, key, strlen(key));
+	cipher_text = transpose_plain(text, strlen(text), tk);	
+	init_transpose_key(&tk, key, strlen(key));
+	subst_text = transpose_cipher(cipher_text, strlen(cipher_text), tk);	
+
+	printf("cipher %s\n", cipher_text);
+	printf("text %s\n", subst_text);
+
+	char *cipher = crypt(key, keysquare, text);
+	printf("cipher %s\n", cipher);
+	char *plain = de_crypt(key, keysquare, cipher);
+	printf("text %s\n", plain);
 }
+

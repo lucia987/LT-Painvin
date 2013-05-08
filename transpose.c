@@ -11,16 +11,7 @@ void init_transpose_key(struct transpose_key *tk, char *key, int size)
 		tk->elem[i].c = key[i];
 		tk->elem[i].p = i;
 	}
-}
-
-struct reverse_key* reverse_tranpose_key(struct transpose_key tk, struct reverse_key *rk)
-{
-	int i;
-	rk->p = (unsigned char *)malloc(tk.size *sizeof *(rk->p));
-	for (i = 0; i < tk.size; i++)
-	{
-		rk->p[tk.elem[i].p] = i;
-	}
+	quicksort(tk, 0, tk->size-1);
 }
 
 void fprint_transpose_key(FILE *fd, struct transpose_key tk)
@@ -64,12 +55,13 @@ void quicksort(struct transpose_key *tk, int left, int right)
 	quicksort(tk, left, old_right); 
 }
 
-void transpose_plain(char *plain, char *cipher, int size, struct transpose_key key)
+char* transpose_plain(char *plain, int size, struct transpose_key key)
 {
 	int n_columns = key.size;
 	int n_lines = size / key.size;
 	int n_fuller_columns = size % key.size;
 	int lin, col;
+	char *cipher = (char *)malloc((size+1) * sizeof (*cipher));
 	char *p = cipher;
 	for (col = 0; col < n_columns; col ++)
 	{
@@ -84,18 +76,20 @@ void transpose_plain(char *plain, char *cipher, int size, struct transpose_key k
 		}
 	}
 	*p = '\0';
+	return cipher;
 }
 
-void transpose_cipher(char *cipher, char *plain, int size, struct reverse_key key)
+char* transpose_cipher(char *cipher, int size, struct transpose_key key)
 {
 	int n_columns = key.size;
 	int n_lines = size / key.size;
 	int n_fuller_columns = size % key.size;
 	int lin, col;
+	char *plain = (char *)malloc((size+1) * sizeof (*cipher));
 	char *p = cipher;
 	for (col = 0; col < n_columns; col ++)
 	{
-		int actual_col = key.p[col];
+		int actual_col = key.elem[col].p;
 		for (lin = 0; lin < n_lines; lin ++) {
 			plain[lin * n_columns + actual_col] = *p;
 			p ++;	
@@ -105,4 +99,6 @@ void transpose_cipher(char *cipher, char *plain, int size, struct reverse_key ke
 			p ++;
 		}
 	}
+	plain[size] = '\0';
+	return plain;
 }
