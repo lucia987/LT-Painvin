@@ -31,4 +31,4 @@ crypt.o: crypt.c crypt.h
 	gcc -g -c crypt.c -o crypt.o
 
 clean:
-	rm *.o main
+	rm *.o main client server
