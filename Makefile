@@ -1,22 +1,22 @@
-run: build
-	./client
+build: client server
 
-build: client server main
-
-client: compress.o client.o
-	gcc -g compress.o client.o -o client
+client: socket.o client.o
+	gcc -g socket.o client.o -o client
 
 client.o: client.c
 	gcc -g -c client.c -o client.o
  
-server: compress.o server.o
-	gcc -g compress.o server.o -o server
-
-compress.o: compress.c
-	gcc -g -c compress.c -o compress.o
+server: socket.o server.o
+	gcc -g socket.o server.o -o server
 
 server.o: server.c
 	gcc -g -c server.c -o server.o
+
+socket.o: socket.c
+	gcc -g -c socket.c -o socket.o
+
+compress.o: compress.c
+	gcc -g -c compress.c -o compress.o
 
 main: substitute.o transpose.o crypt.o main.o
 	gcc -g substitute.o transpose.o crypt.o main.o -o main
