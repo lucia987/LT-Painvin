@@ -1,6 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+#include "util.h"
 #include "transpose.h"
+
+void check_transpose_key(char *tkey)
+{
+	int i;
+	
+	for (i = 0; i < strlen(tkey); i++)
+	{
+		tkey[i] = tolower(tkey[i]);
+		DIE((tkey[i] < 'a' || tkey[i] > 'z'), "Transposition key must be all letters");
+	}
+}
 
 void init_transpose_key(struct transpose_key *tk, char *key, int size)
 {

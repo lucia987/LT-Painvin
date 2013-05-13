@@ -16,6 +16,7 @@ struct reverse_key {
 	unsigned char *p;
 };
 
+void check_transpose_key(char *tkey);
 void init_transpose_key(struct transpose_key *tk, char *key, int size);
 void fprint_transpose_key(FILE *fd, struct transpose_key tk);
 void quicksort(struct transpose_key *tk, int left, int right);
