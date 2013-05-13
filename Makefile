@@ -1,5 +1,8 @@
 build: client server
 
+cli_args.o: cli_args.c cli_args.h
+	gcc -c -g cli_args.c -o cli_args.o
+
 client: socket.o client.o
 	gcc -g socket.o client.o -o client
 
