@@ -4,7 +4,6 @@
 #define N_CODE		6
 #define N_CODE_SQRD	36
 #define N_ALPHABET	26
-#define CODE		"ADFGVX"
 
 struct substitute_key {
 	char str[N_CODE_SQRD + 1];
@@ -12,6 +11,7 @@ struct substitute_key {
 	unsigned char col[N_CODE_SQRD];
 };
 
+void check_substitute_key(char *skey);
 void init_substitute_key(char *keysquare, struct substitute_key *ks);
 char *substitute_plain(struct substitute_key *ks, char *plain, int size);
 char *substitute_cipher(struct substitute_key *ks, char *cipher, int size);

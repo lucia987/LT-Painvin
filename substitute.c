@@ -1,6 +1,31 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+
+#include "util.h"
 #include "substitute.h"
+
+#define CODE		"ADFGVX"
+#define ALPHABET	"abcdefghijklmnopqrstuvwxyz0123456789"
+#define HASH_CHAR(c)	(((c) < 'a')? (N_ALPHABET + (c) - '0') : ((c) - 'a'))
+
+void check_substitute_key(char *skey)
+{
+	int i;
+	unsigned char occur_check[N_CODE_SQRD];
+
+	for (i = 0; i < strlen(skey); i++)
+	{
+		int index = HASH_CHAR(tolower(skey[i]));
+		DIE(index < 0 || index >= sizeof occur_check,
+			"Substitute key characters must be alphanumeric");
+		occur_check[index] |= 1;			
+	}
+	for (i = 0; i < sizeof occur_check; i++)
+	{
+		DIE(!occur_check[i], "Substitute key is missing character in a-z or 0-9");
+	}
+}
 
 void init_substitute_key(char *keysquare, struct substitute_key *ks)
 {
@@ -11,10 +36,7 @@ void init_substitute_key(char *keysquare, struct substitute_key *ks)
 	ks->str[N_CODE_SQRD] = '\0';
 	while (*p != '\0')
 	{
-		if(*p < 'a')
-			index = N_ALPHABET + *p - '0';
-		else 
-			index = *p - 'a';
+		index = HASH_CHAR(*p);
 		ks->line[index] = count / N_CODE;
 		ks->col[index] = count % N_CODE;
 		p ++;
