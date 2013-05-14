@@ -18,6 +18,7 @@ void check_transpose_key(char *tkey)
 
 void init_transpose_key(struct transpose_key *tk, char *key, int size)
 {
+	DEBUG("init_transpose_key(key=%s, size=%d)", key, size);
 	tk->size = size;
 	tk->elem = (struct transpose_key_elem *)malloc(size * sizeof *(tk->elem));
 	int i;
@@ -28,17 +29,18 @@ void init_transpose_key(struct transpose_key *tk, char *key, int size)
 	quicksort(tk, 0, tk->size-1);
 }
 
-void fprint_transpose_key(FILE *fd, struct transpose_key tk)
+char* print_transpose_key(struct transpose_key tk)
 {
 	int i;
+	char *str = (char *)calloc(tk.size+1, sizeof(*str));
 	for (i = 0; i < tk.size; i++)
-	{
-		fprintf(fd, "%d %c\n", tk.elem[i].p, tk.elem[i].c);
-	} 
+		str[i] = tk.elem[i].c;
+	return str;
 }
 
 void quicksort(struct transpose_key *tk, int left, int right)
 {
+	//DEBUG("quicksort(key=%s, left=%d, right=%d", print_transpose_key(*tk), left, right);
 	if (left >= right)
 		return;
 	if (right - left == 1 && tk->elem[left].c > tk->elem[right].c) {
@@ -51,7 +53,7 @@ void quicksort(struct transpose_key *tk, int left, int right)
 	struct transpose_key_elem pivot = tk->elem[left];
 	int old_left = left ++, old_right = right;
 	while (left < right) {
-		while (tk->elem[left].c <= pivot.c)
+		while (tk->elem[left].c < pivot.c)
 			left ++;
 		while (tk->elem[right].c > pivot.c)
 	 		right --;
@@ -71,6 +73,7 @@ void quicksort(struct transpose_key *tk, int left, int right)
 
 char* transpose_plain(char *plain, int size, struct transpose_key key)
 {
+	DEBUG("transpose_plain(plain=%s size=%d)", plain, size);
 	int n_columns = key.size;
 	int n_lines = size / key.size;
 	int n_fuller_columns = size % key.size;

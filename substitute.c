@@ -11,7 +11,7 @@
 
 void check_substitute_key(char *skey)
 {
-	int i;
+	unsigned int i;
 	unsigned char occur_check[N_CODE_SQRD];
 
 	for (i = 0; i < strlen(skey); i++)
@@ -29,6 +29,7 @@ void check_substitute_key(char *skey)
 
 void init_substitute_key(char *keysquare, struct substitute_key *ks)
 {
+	DEBUG("init_substitute_key(key=%s)", keysquare);
 	char *p = keysquare;
 	int count = 0, index;
 
@@ -44,26 +45,31 @@ void init_substitute_key(char *keysquare, struct substitute_key *ks)
 	}
 }
 
-void substitute_plain_elem(struct substitute_key *ks, char plain, char *cipher)
+unsigned char substitute_plain_elem(struct substitute_key *ks, char plain, char *cipher)
 {
 	int index;
 
-	if (plain < 'a')
-		index = N_ALPHABET + plain - '0';
-	else
-		index = plain - 'a';
+	index = HASH_CHAR(plain);
+	/* Skip any non-alphanumeric chars in substitution */
+	if (index < 0 || index > N_CODE_SQRD)
+		return 0;
 	cipher[0] = CODE[ks->line[index]];
 	cipher[1] = CODE[ks->col[index]];
+	return 2;
 }
 
 char *substitute_plain(struct substitute_key *ks, char *plain, int size)
 {
+	DEBUG("substitute_plain(size=%s)", plain, size);
 	int i;
-	char *cipher = (char *)malloc(2 * size * sizeof(*cipher));
+	char *cipher = (char *)calloc(2 * size, sizeof(*cipher));
+	unsigned int offset = 0;
 
 	for (i = 0; i < size; i ++)
 	{
-		substitute_plain_elem(ks, plain[i], cipher + 2*i);
+		unsigned char inc =
+			substitute_plain_elem(ks, plain[i], cipher + offset);
+		offset += inc;
 	}
 	return cipher;
 }

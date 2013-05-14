@@ -14,17 +14,17 @@ void fprintf_compress_text(FILE *fd, struct compress_text comp)
 	}
 }
 
-unsigned char compress_cript_char(char c)
+unsigned char compress_crypt_char(char c)
 {
 	return (c % 11 + 1);
 }
 
-char de_compress_cript_char(unsigned char c)
+char de_compress_crypt_char(unsigned char c)
 {
 	return cipher_chars_by_compression[c];
 }
 
-struct compress_text *compress_cripted_text(char *cript_text, int size)
+struct compress_text *compress_crypted_text(char *crypt_text, int size)
 {
 	int i;
 	struct compress_text *ct = (struct compress_text *)malloc(sizeof *ct);
@@ -34,18 +34,18 @@ struct compress_text *compress_cripted_text(char *cript_text, int size)
 	for (i = 0; i < size; i++)
 	{
 		if (i % 2)
-			ct->text[i / 2] |= compress_cript_char(cript_text[i]) << 4;
+			ct->text[i / 2] |= compress_crypt_char(crypt_text[i]) << 4;
 		else
-			ct->text[i / 2] = compress_cript_char(cript_text[i]);
+			ct->text[i / 2] = compress_crypt_char(crypt_text[i]);
 	}
 
 	return ct;
 }
 
-char *de_compress_cripted_text(unsigned char *compress_text, int size)
+char *de_compress_crypted_text(unsigned char *compress_text, int size)
 {
 	int i, index;
-	char *cript_text = (char *)calloc((size * 2 + 1), sizeof *cript_text);
+	char *crypt_text = (char *)calloc((size * 2 + 1), sizeof *crypt_text);
 
 	for (i = 0; i < size; i++)
 	{
@@ -53,10 +53,10 @@ char *de_compress_cripted_text(unsigned char *compress_text, int size)
 		if (index < 0)
 			break;
 
-		cript_text[i * 2] = cipher_chars_by_compression[index];
-		cript_text[i * 2 + 1] = cipher_chars_by_compression[(compress_text[i] >> 4) - 1];
+		crypt_text[i * 2] = cipher_chars_by_compression[index];
+		crypt_text[i * 2 + 1] = cipher_chars_by_compression[(compress_text[i] >> 4) - 1];
 	}
-	cript_text[size * 2] = '\0';
+	crypt_text[size * 2] = '\0';
 
-	return cript_text;
+	return crypt_text;
 }

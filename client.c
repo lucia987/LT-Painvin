@@ -6,53 +6,61 @@
 #include <netdb.h>
 
 #include "util.h"
+#include "cli_args.h"
 #include "socket.h"
+#include "crypt.h"
 #include "compress.h"
 
-int main()
+int main(int argc, char **argv)
 {
 	int sockfd, n, ret;
 	struct sockaddr_in server_addr;
 	struct hostent *server;
-	char buffer[BUF_SIZE];
+	char buffer[BUF_SIZE+1];
+	struct cliargs cliargs;
 
-	char *hostname = "localhost";
+	cliargs = parse_cli_args(argc, argv);
+	DEBUG("Parsed CLI args.");
 
 	/* Create TCP socket */
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	DIE(sockfd < 0, "Cannot create socket");
+	DIE_ERRNO(sockfd < 0, "socket");
+	DEBUG("Created socket.");
 
-/*
-	make_non_block_socket(sockfd);
-	DIE (!is_non_block(sockfd), "client sock is not nonblock");
-*/
 	/* Get server hostent struct */
-	server = gethostbyname(hostname);
-	DIE(server == NULL, "No such host");
+	server = gethostbyname(cliargs.hostname);
+	DIE_ERRNO(server == NULL, "No such host");
 
 	/* Initialize address structure */
 	memset((char *) &server_addr, 0, sizeof server_addr);
 	server_addr.sin_family = AF_INET;
 	memcpy((char *)&server_addr.sin_addr.s_addr, (char *)server->h_addr, server->h_length);
-	server_addr.sin_port = htons(PORTNO);
+	server_addr.sin_port = htons(cliargs.portno);
 	
 	/* Connect to server socket */
 	ret = connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
-	DIE(ret < 0, "Cannot connect to server");
+	DIE_ERRNO(ret < 0, "Connect to server");
 	
-	/* Send message */
+	/* Reserve memory for cleartext message */
 	memset(buffer, 0, BUF_SIZE);
-	memcpy(buffer, "abcdefghijklmnopqrstuvwxyz", 26); 
+	memcpy(buffer, "abcdefghijklmnopqrstuvwxyz", 26);
+	
+	/* Crypt cleartext message */
+	char *cryptbuf = crypt(cliargs.tkey, cliargs.skey, buffer);
 
-	printf("before send");
-	n = send(sockfd, buffer, strlen(buffer), 0);
-	DIE (n < 0, "Cannot write to socket");
-	printf("after send %d\n", n);
+	/* Compress cryped text */
+	struct compress_text *compressbuf =
+		compress_crypted_text(cryptbuf, strlen(cryptbuf));
+
+	/* Send compressed crypted message */
+	n = send(sockfd, compressbuf->text, compressbuf->size, 0);
+	DIE_ERRNO(n < 0, "Cannot write to socket");
+	DEBUG("Sent message %s", buffer);
+
 	/* Receive confirmation */
 
 	/* Close socket */	
 	close(sockfd);
 
-	printf("What just happened\n");
 	return 0;
 }

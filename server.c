@@ -10,7 +10,9 @@
 #include <errno.h>
 
 #include "util.h"
+#include "cli_args.h"
 #include "socket.h"
+#include "compress.h"
 
 #define MAX_EVENTS	10
 #define MAX_CLIENTS	5
@@ -37,17 +39,20 @@ int create_and_bind_socket(int portno)
 	return listenfd;
 }
 
-int main()
+int main(int argc, char **argv)
 {
 	int epollfd, listenfd, ret;
 	struct epoll_event event, *events;
 	struct sockaddr_in client_addr;
+	struct cliargs cliargs;
+
+	cliargs = parse_cli_args(argc, argv);
 
 	/* Create epoll descriptor */
 	epollfd = epoll_create(10);
 
 	/* Create, bind and listen on socket */
-	listenfd = create_and_bind_socket(PORTNO);
+	listenfd = create_and_bind_socket(cliargs.portno);
 	
 	/* Make socket non blocking */
 	make_non_block_socket(listenfd);
@@ -107,10 +112,10 @@ int main()
 						sbuf, sizeof sbuf,
 						NI_NUMERICHOST | NI_NUMERICSERV);
 					if (!ret)
-						printf("Accepted connection on descriptor %d "
-							"(host=%s, port=%s)\n", clientfd, hbuf, sbuf);
+						DEBUG("Accepted connection on descriptor %2d"
+							"(host=%s, port=%s).", clientfd, hbuf, sbuf);
 					/* Make incoming socket non-blocking */
-					//make_non_block_socket(clientfd);
+					make_non_block_socket(clientfd);
 
 					/* Add incoming socket to epoll descriptor */
 					event.data.fd = clientfd;
@@ -128,12 +133,12 @@ int main()
 				while(1)
 				{
 					int count;
-					char buffer[BUF_SIZE];
+					char buffer[CRYPTBUF_SIZE+1];
 
 					count = read(events[i].data.fd, buffer, sizeof buffer);
 					if (count == -1)
 					{
-						// If errno == EAGAIN, we have read all data
+						/* If errno == EAGAIN, we have read all data */
 						if (errno != EAGAIN)
 						{
 							perror("read");
@@ -143,14 +148,21 @@ int main()
 					}
 					else if (count == 0)
 					{
-						// Remote end closed the connection
-						printf("Remote end closed connection on fd %d\n",
+						/* Remote end closed the connection */
+						DEBUG("Remote end closed connection on fd %d",
 							events[i].data.fd);
 						done = 1;
 						break;
 					}
 					buffer[count] = '\0';
-					printf("buffer %s\n", buffer);
+
+					/* Decompress received message */
+					char *decompbuf = de_compress_crypted_text(buffer, strlen(buffer));
+
+					/* Decrypt decompressed received message */
+					char *decryptbuf = de_crypt(cliargs.tkey, cliargs.skey, decompbuf);
+					DEBUG("Received on fd %d message %s",
+						events[i].data.fd, decryptbuf);
 				}
 				if (done)
 				{

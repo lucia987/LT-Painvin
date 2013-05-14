@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "util.h"
 #include "substitute.h"
 #include "transpose.h"
 #include "crypt.h"
@@ -18,10 +19,11 @@ char check_keysquare(char *keysquare)
 
 char* substitute(char *keysquare, char *plain_text)
 {
+	DEBUG("substitute(key=%s, plain_text=%s)", keysquare, plain_text);
 	struct substitute_key sk;
 	char *subst_text;
 	
-	init_substitute_key(keysquare, &sk);	
+	init_substitute_key(keysquare, &sk);
 	subst_text = substitute_plain(&sk, plain_text, strlen(plain_text));
 
 	return subst_text;
@@ -32,7 +34,7 @@ char* de_substitute(char *keysquare, char *subst_text)
 	struct substitute_key sk;
 	char *plain_text;
 	
-	init_substitute_key(keysquare, &sk);	
+	init_substitute_key(keysquare, &sk);
 	plain_text = substitute_cipher(&sk, subst_text, strlen(subst_text));
 
 	return plain_text;
@@ -40,6 +42,7 @@ char* de_substitute(char *keysquare, char *subst_text)
 
 char* transpose(char *key, char *subst_text)
 {
+	DEBUG("transpose(key=%s subst_text=%s)", key, subst_text);
 	struct transpose_key tk;
 	char *cipher_text;
 
@@ -60,7 +63,7 @@ char* de_transpose(char *key, char *cipher_text)
 
 char* crypt(char *key, char *keysquare, char *plain_text)
 {
-
+	DEBUG("crypt(plaintext=%s)", plain_text);
 	return transpose(key, substitute(keysquare, plain_text));
 }
 
