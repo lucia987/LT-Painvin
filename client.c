@@ -8,19 +8,66 @@
 #include "util.h"
 #include "cli_args.h"
 #include "socket.h"
-#include "crypt.h"
 #include "compress.h"
+#include "substitute.h"
+#include "transpose.h"
+
+void send_file(int sockfd, char *filename, struct substitute_key sk, struct transpose_key tk)
+{	
+	char buffer[BUF_SIZE+1];
+	FILE *fd;
+	int ret;
+
+	fd = fopen(filename, "r");
+	DIE_ERRNO(fd == NULL, "fopen");
+
+	while (1)
+	{
+		
+		/* Reserve memory for cleartext message */
+		memset(buffer, 0, BUF_SIZE+1);
+
+		/* Read file chunk in buffer */
+		int count = fread(buffer, sizeof(*buffer), BUF_SIZE, fd);
+		DIE_ERRNO(count < 0, "fread");
+
+		if (count == 0)
+		{
+			break;
+		}
+
+		/* Crypt cleartext message */
+		char *substbuf = substitute_plain(sk, buffer, strlen(buffer));
+		char *transbuf = transpose_plain(tk, substbuf, strlen(substbuf));
+
+		/* Compress cryped text */
+		struct compress_text *compressbuf =
+			compress_crypted_text(transbuf, strlen(transbuf));
+
+		/* Send compressed crypted message */
+		ret = send(sockfd, compressbuf->text, compressbuf->size, 0);
+		DIE_ERRNO(ret < 0, "Cannot write to socket");
+		//DEBUG("Sent message %s", buffer);
+	}
+	fclose(fd);
+	DEBUG("Sent file %s as ADFGVX message.", filename);
+}
 
 int main(int argc, char **argv)
 {
-	int sockfd, n, ret;
+	int sockfd, ret;
 	struct sockaddr_in server_addr;
 	struct hostent *server;
-	char buffer[BUF_SIZE+1];
 	struct cliargs cliargs;
+	struct substitute_key sk;
+	struct transpose_key tk;
 
 	cliargs = parse_cli_args(argc, argv);
 	DEBUG("Parsed CLI args.");
+
+	/* Initialize ADFGVX key structures */
+	init_substitute_key(cliargs.skey, &sk);
+	init_transpose_key(&tk, cliargs.tkey, strlen(cliargs.tkey));
 
 	/* Create TCP socket */
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -40,27 +87,12 @@ int main(int argc, char **argv)
 	/* Connect to server socket */
 	ret = connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr));
 	DIE_ERRNO(ret < 0, "Connect to server");
-	
-	/* Reserve memory for cleartext message */
-	memset(buffer, 0, BUF_SIZE);
-	memcpy(buffer, "abcdefghijklmnopqrstuvwxyz", 26);
-	
-	/* Crypt cleartext message */
-	char *cryptbuf = crypt(cliargs.tkey, cliargs.skey, buffer);
 
-	/* Compress cryped text */
-	struct compress_text *compressbuf =
-		compress_crypted_text(cryptbuf, strlen(cryptbuf));
-
-	/* Send compressed crypted message */
-	n = send(sockfd, compressbuf->text, compressbuf->size, 0);
-	DIE_ERRNO(n < 0, "Cannot write to socket");
-	DEBUG("Sent message %s", buffer);
-
-	/* Receive confirmation */
+	send_file(sockfd, cliargs.file, sk, tk);
 
 	/* Close socket */	
 	close(sockfd);
+	DEBUG("Closed socket.");
 
 	return 0;
 }

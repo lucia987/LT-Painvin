@@ -71,9 +71,9 @@ void quicksort(struct transpose_key *tk, int left, int right)
 	quicksort(tk, left, old_right); 
 }
 
-char* transpose_plain(char *plain, int size, struct transpose_key key)
+char* transpose_plain(struct transpose_key key, char *plain, int size)
 {
-	DEBUG("transpose_plain(plain=%s size=%d)", plain, size);
+	//DEBUG("transpose_plain(plain=%s size=%d)", plain, size);
 	int n_columns = key.size;
 	int n_lines = size / key.size;
 	int n_fuller_columns = size % key.size;
@@ -96,7 +96,7 @@ char* transpose_plain(char *plain, int size, struct transpose_key key)
 	return cipher;
 }
 
-char* transpose_cipher(char *cipher, int size, struct transpose_key key)
+char* transpose_cipher(struct transpose_key key, char *cipher, int size)
 {
 	int n_columns = key.size;
 	int n_lines = size / key.size;

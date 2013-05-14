@@ -13,9 +13,67 @@
 #include "cli_args.h"
 #include "socket.h"
 #include "compress.h"
+#include "substitute.h"
+#include "transpose.h"
 
 #define MAX_EVENTS	10
 #define MAX_CLIENTS	5
+#define MAX_FILENAME	50
+
+struct sock_to_file
+{
+	int sockfd;
+	FILE *fd;
+	char *filename;
+};
+
+struct sock_to_file *fileassoc[MAX_CLIENTS];
+
+int get_socket_file(int sockfd)
+{
+	//DEBUG("get_socket_file(%d)", sockfd);
+	int i;
+	for (i=0; i < sizeof fileassoc; i++)
+		if (fileassoc[i] != NULL && fileassoc[i]->sockfd == sockfd)
+			return i;
+	return -1;
+}
+
+int add_file_assoc(int sockfd, char *host, char *port)
+{
+	//DEBUG("add_file_assoc(%d, %s, %s)", sockfd, host, port);
+	char *filename = (char *)calloc(MAX_FILENAME, sizeof *filename);
+
+	sprintf(filename, "host%sport%s.log", host, port);
+	//DEBUG("filename=%s", filename);
+	FILE *fd = fopen(filename, "w");
+	DIE_ERRNO(fd == NULL, "fopen");
+
+	int i;
+	for (i = 0; i < sizeof fileassoc; i++)
+	{
+		if (fileassoc[i] == NULL)
+		{
+			fileassoc[i] = (struct sock_to_file *)malloc(sizeof(struct sock_to_file));
+			fileassoc[i]->sockfd = sockfd;
+			fileassoc[i]->fd = fd;
+			fileassoc[i]->filename = filename;
+			return i;
+		}	
+	}
+	DIE(0==0, "Max clients reached");
+}
+
+void free_file_assoc(int i)
+{
+	//DEBUG("free_file_assoc(%d)", fileassoc[i]->sockfd);
+	char *filename = fileassoc[i]->filename;
+
+	fclose(fileassoc[i]->fd);
+	free(filename);
+	free(fileassoc[i]);
+	fileassoc[i] = NULL;
+}
 
 int create_and_bind_socket(int portno)
 {
@@ -39,14 +97,35 @@ int create_and_bind_socket(int portno)
 	return listenfd;
 }
 
+void write_to_file(int sockfd, char *buf)
+{
+	int index = get_socket_file(sockfd);
+	DIE(index < 0 || index > MAX_CLIENTS, "No file for socket %d", sockfd);
+
+	int count = 0, size = strlen(buf);
+	while (count < size)
+	{
+		int inc = fwrite(buf + count, sizeof(*buf), size - count,
+			fileassoc[index]->fd);
+		DIE_ERRNO(inc < 0, "fwrite");
+		count += inc;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	int epollfd, listenfd, ret;
 	struct epoll_event event, *events;
 	struct sockaddr_in client_addr;
 	struct cliargs cliargs;
+	struct substitute_key sk;
+	struct transpose_key tk;
 
 	cliargs = parse_cli_args(argc, argv);
+
+	/* Initialize ADFGVX key structures */
+	init_substitute_key(cliargs.skey, &sk);
+	init_transpose_key(&tk, cliargs.tkey, strlen(cliargs.tkey));
 
 	/* Create epoll descriptor */
 	epollfd = epoll_create(10);
@@ -112,8 +191,11 @@ int main(int argc, char **argv)
 						sbuf, sizeof sbuf,
 						NI_NUMERICHOST | NI_NUMERICSERV);
 					if (!ret)
+					{
 						DEBUG("Accepted connection on descriptor %2d"
 							"(host=%s, port=%s).", clientfd, hbuf, sbuf);
+						add_file_assoc(clientfd, hbuf, sbuf);
+					}
 					/* Make incoming socket non-blocking */
 					make_non_block_socket(clientfd);
 
@@ -157,17 +239,20 @@ int main(int argc, char **argv)
 					buffer[count] = '\0';
 
 					/* Decompress received message */
-					char *decompbuf = de_compress_crypted_text(buffer, strlen(buffer));
+					char *transbuf = de_compress_crypted_text(buffer, strlen(buffer));
 
 					/* Decrypt decompressed received message */
-					char *decryptbuf = de_crypt(cliargs.tkey, cliargs.skey, decompbuf);
-					DEBUG("Received on fd %d message %s",
-						events[i].data.fd, decryptbuf);
+					char *substbuf = transpose_cipher(tk, transbuf, strlen(transbuf));
+					char *decryptbuf = substitute_cipher(sk, substbuf, strlen(substbuf));
+
+					write_to_file(events[i].data.fd, decryptbuf);
 				}
 				if (done)
 				{
 					close (events[i].data.fd);
-
+					int index = get_socket_file(events[i].data.fd);
+					DEBUG("Connection closed, check file %s", fileassoc[index]->filename);
+					free_file_assoc(index);
 				}
 
 			}

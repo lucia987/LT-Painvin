@@ -13,7 +13,7 @@ struct substitute_key {
 
 void check_substitute_key(char *skey);
 void init_substitute_key(char *keysquare, struct substitute_key *ks);
-char *substitute_plain(struct substitute_key *ks, char *plain, int size);
-char *substitute_cipher(struct substitute_key *ks, char *cipher, int size);
+char *substitute_plain(struct substitute_key ks, char *plain, int size);
+char *substitute_cipher(struct substitute_key ks, char *cipher, int size);
 
 #endif
