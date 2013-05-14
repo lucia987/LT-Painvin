@@ -7,7 +7,15 @@
 
 #define CODE		"ADFGVX"
 #define ALPHABET	"abcdefghijklmnopqrstuvwxyz0123456789"
-#define HASH_CHAR(c)	(((c) < 'a')? (N_ALPHABET + (c) - '0') : ((c) - 'a'))
+
+int hash_char(char c)
+{
+	if (c >= '0' && c <= '9')
+		return N_ALPHABET + (c) - '0';
+	else if (c >= 'a' && c <= 'z')
+		return c - 'a';
+	else return -1;
+}
 
 void check_substitute_key(char *skey)
 {
@@ -16,7 +24,7 @@ void check_substitute_key(char *skey)
 
 	for (i = 0; i < strlen(skey); i++)
 	{
-		int index = HASH_CHAR(tolower(skey[i]));
+		int index = hash_char(tolower(skey[i]));
 		DIE(index < 0 || index >= sizeof occur_check,
 			"Substitute key characters must be alphanumeric");
 		occur_check[index] |= 1;			
@@ -37,7 +45,7 @@ void init_substitute_key(char *keysquare, struct substitute_key *ks)
 	ks->str[N_CODE_SQRD] = '\0';
 	while (*p != '\0')
 	{
-		index = HASH_CHAR(*p);
+		index = hash_char(*p);
 		ks->line[index] = count / N_CODE;
 		ks->col[index] = count % N_CODE;
 		p ++;
@@ -49,9 +57,10 @@ unsigned char substitute_plain_elem(struct substitute_key ks, char plain, char *
 {
 	int index;
 
-	index = HASH_CHAR(plain);
+	index = hash_char(tolower(plain));
+
 	/* Skip any non-alphanumeric chars in substitution */
-	if (index < 0 || index > N_CODE_SQRD)
+	if (index < 0 || index >= N_CODE_SQRD)
 		return 0;
 	cipher[0] = CODE[ks.line[index]];
 	cipher[1] = CODE[ks.col[index]];
