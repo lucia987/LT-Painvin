@@ -1,37 +1,36 @@
+CC = gcc
+CFLAGS = -Wall -Wextra -g
+
+runclient: client
+	./client --server=localhost --port=8000 --tkey="natang" --skey="ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8" --file=input.txt
+
+runserver: server
+	./server --port=8000 --tkey="natang" --skey="ph0qg64mea1yl2nofdxkr3cvs5zw7bj9uti8" --file=output.txt
+
 build: client server
 
-cli_args.o: cli_args.c cli_args.h
-	gcc -c -g cli_args.c -o cli_args.o
-
-client: socket.o client.o
-	gcc -g socket.o client.o -o client
+client: substitute.o transpose.o cli_args_client.o crypt.o compress.o client.o
 
 client.o: client.c
-	gcc -g -c client.c -o client.o
  
-server: socket.o server.o
-	gcc -g socket.o server.o -o server
+server: socket.o transpose.o substitute.o cli_args.o crypt.o compress.o server.o
 
 server.o: server.c
-	gcc -g -c server.c -o server.o
 
 socket.o: socket.c
-	gcc -g -c socket.c -o socket.o
 
-compress.o: compress.c
-	gcc -g -c compress.c -o compress.o
+cli_args.o: cli_args.c cli_args.h
 
-main: substitute.o transpose.o crypt.o main.o
-	gcc -g substitute.o transpose.o crypt.o main.o -o main
+cli_args_client.o: cli_args.c cli_args.h
+	$(CC) $(CFLAGS) -c -DIS_CLIENT=1 -o $@ $<
+
+compress.o: compress.c compress.h
 
 substitute.o: substitute.c substitute.h
-	gcc -g -c substitute.c -o substitute.o
 
 transpose.o: transpose.c transpose.h
-	gcc -g -c transpose.c -o transpose.o
 
 crypt.o: crypt.c crypt.h
-	gcc -g -c crypt.c -o crypt.o
 
 clean:
 	rm *.o main client server
