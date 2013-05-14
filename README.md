@@ -4,12 +4,15 @@ The client sends the text in an input text file as an ADFGVX
 encoded message to a server. Before sending, the message 
 comprised of only A, D, F, G, V and X characters is compressed
 in a manner that sends 2 characters in one byte.
-The server decompressed the ADFGVX message and decrypts it, writing it
+The server decompresses the received ADFGVX message and decrypts it, writing it
 to a log file named host<client_hostname>port<client_port>.log.
 The server accepts MAX_CLIENTS connections and reads their messages in a
 non blocking manner using epoll.
 However, the server write to the log file is a blocking operation.
 Enhancements to this client server application would involve
+* using epoll control for writing messages to log files, instead of
+  blocking fwrite operations, to decouple socket read from file write
+(however, thos requires storing buffers until write to file is possible)
 * using separate threads for:
 	* handling incoming connections
 	* reading ADFGVX messages from socket
